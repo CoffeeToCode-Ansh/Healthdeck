@@ -1,220 +1,199 @@
+// api/index.js
+// Express app that powers the contact/reservation form.
+// Exported (not listened on) so it works both:
+//   - locally, via server.js (app.listen)
+//   - on Vercel, as a serverless function (vercel.json points api/index.js at @vercel/node)
+
+require('dotenv').config();
+
 const express = require('express');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
-require('dotenv').config();
 
 const app = express();
 
-// ==========================================
-// 1. CORS & Body Parsers
-// ==========================================
+/* ------------------------------------------------------------------ */
+/*  Middleware                                                         */
+/* ------------------------------------------------------------------ */
+
+// Allow only the configured frontend origin (or '*' for open access during dev/testing)
 const allowedOrigin = process.env.ALLOWED_ORIGIN || '*';
 app.use(
   cors({
-    origin: allowedOrigin === '*' ? true : allowedOrigin,
+    origin: allowedOrigin,
     methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
+    allowedHeaders: ['Content-Type'],
   })
 );
 
-app.use(express.json({ limit: '50kb' }));
-app.use(express.urlencoded({ extended: true, limit: '50kb' }));
+app.use(express.json({ limit: '10kb' })); // small limit — this endpoint only ever needs a short form payload
 
-// ==========================================
-// 2. Nodemailer Transporter Setup
-// ==========================================
-const createTransporter = () => {
-  const isSecure = process.env.SMTP_SECURE === 'true' || process.env.SMTP_PORT === '465';
+/* ------------------------------------------------------------------ */
+/*  SMTP transporter                                                   */
+/* ------------------------------------------------------------------ */
 
+function buildTransporter() {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT, 10) || 587,
-    secure: isSecure, // true for port 465, false for 587 / 25
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 587,
+    secure: process.env.SMTP_SECURE === 'true', // true for port 465, false for 587/others
     auth: {
       user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
+      pass: process.env.SMTP_PASS,
     },
-    // Optional timeout settings
-    connectionTimeout: 10000,
-    greetingTimeout: 10000,
-    socketTimeout: 15000
   });
-};
-
-// ==========================================
-// 3. Validation & Sanitization Helper
-// ==========================================
-function validateContactPayload({ name, email, message }) {
-  const errors = [];
-
-  // Check existence
-  if (!name || typeof name !== 'string') {
-    errors.push('Name is required.');
-  } else if (name.trim().length < 2) {
-    errors.push('Name must be at least 2 characters long.');
-  } else if (name.trim().length > 100) {
-    errors.push('Name cannot exceed 100 characters.');
-  }
-
-  // Email format regex
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!email || typeof email !== 'string') {
-    errors.push('Email is required.');
-  } else if (!emailRegex.test(email.trim())) {
-    errors.push('Please provide a valid email address.');
-  } else if (email.trim().length > 120) {
-    errors.push('Email cannot exceed 120 characters.');
-  }
-
-  // Message length check
-  if (!message || typeof message !== 'string') {
-    errors.push('Message is required.');
-  } else if (message.trim().length < 10) {
-    errors.push('Message must be at least 10 characters long.');
-  } else if (message.trim().length > 3000) {
-    errors.push('Message cannot exceed 3000 characters.');
-  }
-
-  return {
-    isValid: errors.length === 0,
-    errors,
-    sanitized: {
-      name: name ? name.trim().replace(/[<>]/g, '') : '',
-      email: email ? email.trim().toLowerCase() : '',
-      message: message ? message.trim().replace(/[<>]/g, '') : ''
-    }
-  };
 }
 
-// ==========================================
-// 4. API Endpoints
-// ==========================================
+// Built once and reused across requests (and across warm serverless invocations)
+let transporter;
+function getTransporter() {
+  if (!transporter) transporter = buildTransporter();
+  return transporter;
+}
 
-// Health Check Endpoint
+/* ------------------------------------------------------------------ */
+/*  Validation                                                         */
+/* ------------------------------------------------------------------ */
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function validateContactPayload(body) {
+  const errors = [];
+  const clean = {};
+
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim();
+  const phone = String(body.phone || '').trim();
+  const message = String(body.message || '').trim();
+  const date = String(body.date || '').trim();
+  const time = String(body.time || '').trim();
+  const guests = String(body.guests || '').trim();
+
+  if (!name) errors.push('Name is required.');
+  else if (name.length > 100) errors.push('Name is too long.');
+
+  if (!email) errors.push('Email is required.');
+  else if (!EMAIL_RE.test(email)) errors.push('Please provide a valid email address.');
+
+  if (phone && !/^[\d\s()+\-.]{7,20}$/.test(phone)) errors.push('Please provide a valid phone number.');
+
+  if (!message) errors.push('Message is required.');
+  else if (message.length > 2000) errors.push('Message is too long (2000 characters max).');
+
+  // Honeypot field: real users never fill a visually-hidden field.
+  // If it's populated, silently treat as spam by flagging it — the route handles the response.
+  const isBot = Boolean(String(body.company_website || '').trim());
+
+  clean.name = name;
+  clean.email = email;
+  clean.phone = phone;
+  clean.message = message;
+  clean.date = date;
+  clean.time = time;
+  clean.guests = guests;
+  clean.isBot = isBot;
+
+  return { errors, clean };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Routes                                                              */
+/* ------------------------------------------------------------------ */
+
 app.get('/api/health', (req, res) => {
-  res.status(200).json({
-    status: 'healthy',
+  res.json({
+    success: true,
+    message: 'Server is healthy',
     timestamp: new Date().toISOString(),
-    service: 'Health Deck SMTP Mailer'
   });
 });
 
-// Contact Form Endpoint: POST /api/contact
 app.post('/api/contact', async (req, res) => {
+  const { errors, clean } = validateContactPayload(req.body || {});
+
+  if (errors.length) {
+    return res.status(400).json({ success: false, message: errors.join(' ') });
+  }
+
+  // Quietly accept-and-drop suspected bot submissions instead of revealing the honeypot exists
+  if (clean.isBot) {
+    return res.status(200).json({ success: true, message: 'Message sent successfully! We will get back to you soon.' });
+  }
+
+  const detailRows = [
+    ['Name', clean.name],
+    ['Email', clean.email],
+    clean.phone && ['Phone', clean.phone],
+    clean.date && ['Date', clean.date],
+    clean.time && ['Time', clean.time],
+    clean.guests && ['Guests', clean.guests],
+  ].filter(Boolean);
+
+  const textBody = [
+    'New contact form submission:',
+    '',
+    ...detailRows.map(([k, v]) => `${k}: ${v}`),
+    '',
+    'Message:',
+    clean.message,
+  ].join('\n');
+
+  const htmlRows = detailRows
+    .map(([k, v]) => `<tr><td style="padding:4px 12px 4px 0;color:#667779;font-size:13px;"><b>${k}</b></td><td style="padding:4px 0;font-size:13px;">${escapeHtml(v)}</td></tr>`)
+    .join('');
+
+  const htmlBody = `
+    <div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;">
+      <h2 style="color:#07515a;">New Contact Form Submission</h2>
+      <table style="border-collapse:collapse;margin:12px 0;">${htmlRows}</table>
+      <p style="color:#0a3439;font-size:14px;"><b>Message</b></p>
+      <p style="white-space:pre-wrap;font-size:14px;line-height:1.6;color:#333;">${escapeHtml(clean.message)}</p>
+    </div>`;
+
   try {
-    const { name, email, message } = req.body || {};
-
-    // Run backend validation
-    const validation = validateContactPayload({ name, email, message });
-    if (!validation.isValid) {
-      return res.status(400).json({
-        success: false,
-        message: validation.errors[0],
-        errors: validation.errors
-      });
-    }
-
-    const cleanData = validation.sanitized;
-    const companyEmail = process.env.COMPANY_EMAIL || 'care@healthdeck.example';
-
-    // Verify SMTP configuration before sending
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-      console.error('[SMTP Config Error]: Missing SMTP_USER or SMTP_PASS.');
-      return res.status(500).json({
-        success: false,
-        message: 'Mail service is currently unconfigured. Please contact support.'
-      });
-    }
-
-    const transporter = createTransporter();
-
-    // Prepare Branded Email Template
-    const emailHtml = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <style>
-          body { font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f4fafb; margin: 0; padding: 24px; color: #173238; }
-          .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 18px; overflow: hidden; border: 1px solid #d9f1f4; box-shadow: 0 10px 25px rgba(39, 120, 133, 0.08); }
-          .header { background: linear-gradient(145deg, #65cad4, #2799aa); color: #ffffff; padding: 28px; text-align: left; }
-          .header h1 { margin: 0; font-size: 22px; letter-spacing: -0.02em; font-weight: 800; }
-          .badge { display: inline-block; padding: 4px 10px; background: rgba(255,255,255,0.25); border-radius: 99px; font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 0.1em; }
-          .content { padding: 32px 28px; }
-          .info-table { width: 100%; border-collapse: collapse; margin-bottom: 24px; }
-          .info-table td { padding: 10px 0; border-bottom: 1px solid #eef6f7; font-size: 14px; }
-          .info-label { width: 110px; font-weight: bold; color: #637c82; }
-          .info-val { color: #173238; font-weight: 600; }
-          .message-box { background: #f0fbfc; border-left: 4px solid #2799aa; padding: 18px; border-radius: 0 12px 12px 0; font-size: 15px; line-height: 1.6; color: #23454c; white-space: pre-wrap; word-break: break-word; }
-          .footer { padding: 20px 28px; background: #eef8fa; text-align: center; font-size: 12px; color: #739097; }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <div class="header">
-            <span class="badge">New Inquiry</span>
-            <h1>Health Deck Contact Message</h1>
-          </div>
-          <div class="content">
-            <table class="info-table">
-              <tr>
-                <td class="info-label">Sender Name:</td>
-                <td class="info-val">${cleanData.name}</td>
-              </tr>
-              <tr>
-                <td class="info-label">Sender Email:</td>
-                <td class="info-val"><a href="mailto:${cleanData.email}" style="color:#2799aa; text-decoration:none;">${cleanData.email}</a></td>
-              </tr>
-              <tr>
-                <td class="info-label">Received At:</td>
-                <td class="info-val">${new Date().toLocaleString('en-US', { timeZoneName: 'short' })}</td>
-              </tr>
-            </table>
-
-            <p style="font-size: 13px; font-weight: bold; color: #637c82; margin: 0 0 8px;">MESSAGE:</p>
-            <div class="message-box">${cleanData.message}</div>
-          </div>
-          <div class="footer">
-            Delivered directly via Health Deck SMTP Integration.<br>
-            You can reply directly to this email to contact <strong>${cleanData.name}</strong>.
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    // Mail options
-    const mailOptions = {
-      from: `"Health Deck Contact" <${process.env.SMTP_USER}>`,
-      to: companyEmail,
-      replyTo: `"${cleanData.name}" <${cleanData.email}>`, // Enables 1-click reply to the patient
-      subject: `[Health Deck Enquiry] from ${cleanData.name}`,
-      text: `You received a new inquiry from Health Deck:\n\nName: ${cleanData.name}\nEmail: ${cleanData.email}\nDate: ${new Date().toISOString()}\n\nMessage:\n${cleanData.message}`,
-      html: emailHtml
-    };
-
-    // Send email via SMTP
-    const info = await transporter.sendMail(mailOptions);
-    console.log('[SMTP Message Sent]: ID =', info.messageId);
+    const mailer = getTransporter();
+    await mailer.sendMail({
+      from: `"${clean.name}" <${process.env.SMTP_USER}>`, // must be the authenticated SMTP user for most providers
+      to: process.env.COMPANY_EMAIL,
+      replyTo: clean.email, // clicking "Reply" in the inbox goes straight to the visitor
+      subject: `New enquiry from ${clean.name}`,
+      text: textBody,
+      html: htmlBody,
+    });
 
     return res.status(200).json({
       success: true,
-      message: 'Your message has been sent successfully to the Health Deck team.',
-      messageId: info.messageId
+      message: 'Message sent successfully! We will get back to you soon.',
     });
-  } catch (error) {
-    console.error('[SMTP Mail Delivery Error]:', error);
-    return res.status(500).json({
+  } catch (err) {
+    console.error('SMTP send failed:', err.message);
+    return res.status(502).json({
       success: false,
-      message: 'Failed to send your message due to a server error. Please try again later.'
+      message: 'We could not send your message right now. Please try again shortly.',
     });
   }
 });
 
-// Fallback for undefined routes
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ------------------------------------------------------------------ */
+/*  Fallbacks                                                           */
+/* ------------------------------------------------------------------ */
+
 app.use((req, res) => {
   res.status(404).json({ success: false, message: 'Endpoint not found' });
 });
 
-// Export app for Vercel serverless execution
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('Unhandled error:', err);
+  res.status(500).json({ success: false, message: 'Internal server error' });
+});
+
 module.exports = app;

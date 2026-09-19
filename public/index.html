@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="description" content="Health Deck — modern healthcare, departments, doctors and health packages, with easy online appointment booking.">
+<title>Health Deck | Modern Healthcare, Simplified</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="healthdeck-style.css">
+</head>
+<body>
+
+<!-- ===== HEADER / NAV ===== -->
+<header class="header">
+  <div class="container nav">
+    <a class="logo" href="#home"><span class="logo-mark">+</span><b>HEALTH<span>DECK</span></b></a>
+    <div class="nav-links">
+      <a href="#about">About</a>
+      <a href="#departments">Departments</a>
+      <a href="#doctors">Doctors</a>
+      <a href="#packages">Packages</a>
+      <a href="#facilities">Facilities</a>
+      <a href="#testimonials">Stories</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div class="nav-actions">
+      <a class="dashboard-link" href="patient-dashboard.html">Patient Dashboard →</a>
+      <button class="btn btn-3d btn-primary" data-open-booking>Book an Appointment</button>
+      <button class="menu-btn" id="menuBtn" aria-label="Toggle menu" aria-controls="mobileMenu" aria-expanded="false">☰</button>
+    </div>
+  </div>
+  <div class="mobile-menu" id="mobileMenu">
+    <a href="#about">About</a>
+    <a href="#departments">Departments</a>
+    <a href="#doctors">Doctors</a>
+    <a href="#packages">Packages</a>
+    <a href="#facilities">Facilities</a>
+    <a href="#testimonials">Stories</a>
+    <a href="#contact">Contact</a>
+    <a class="dashboard-link" href="patient-dashboard.html">Patient Dashboard →</a>
+    <button class="btn btn-3d btn-primary" data-open-booking>Book an Appointment</button>
+  </div>
+</header>
+
+<main>
+
+  <!-- ===== HERO ===== -->
+  <section class="hero" id="home">
+    <div class="container">
+      <div class="hero-card">
+        <div class="hero-photo"></div>
+        <div class="hero-shade"></div>
+        <div class="floating-icon icon-heart">♥</div>
+        <div class="floating-icon icon-plus">+</div>
+        <div class="hero-copy">
+          <span class="eyebrow">✦ TRUSTED CARE, MODERN EXPERIENCE</span>
+          <h1>Healthcare that fits <span>your life</span>, not the other way around.</h1>
+          <p>Find the right department, meet doctors you'll trust, and book an appointment in minutes — all from one clean, simple place.</p>
+          <div class="hero-buttons">
+            <button class="btn btn-3d btn-primary btn-big" data-open-booking>Book an Appointment</button>
+            <a class="btn btn-3d btn-white btn-big" href="#departments">Explore Departments</a>
+          </div>
+          <div class="hero-points">
+            <span>✓ Verified specialists</span>
+            <span>✓ Same-week availability</span>
+            <span>✓ Transparent pricing</span>
+          </div>
+        </div>
+        <div class="hero-widget glass-panel">
+          <div class="widget-title">Quick Book <span class="live">● Live availability</span></div>
+          <div class="quick-grid">
+            <label>Department
+              <select id="quickDept" aria-label="Department">
+                <option>General Medicine</option>
+                <option>Cardiology</option>
+                <option>Pediatrics</option>
+                <option>Orthopedics</option>
+                <option>Dermatology</option>
+              </select>
+            </label>
+            <label>Doctor
+              <select id="quickDoctor" aria-label="Doctor">
+                <option>Dr. Ravi Patel</option>
+                <option>Dr. Meera Nair</option>
+                <option>Dr. Owen Clarke</option>
+                <option>Dr. Layla Haddad</option>
+              </select>
+            </label>
+            <label>Preferred date
+              <input type="date" id="quickDate" aria-label="Preferred date">
+            </label>
+            <button class="btn btn-3d btn-primary" id="quickBook">Book</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT ===== -->
+  <section class="section" id="about">
+    <div class="container about-grid">
+      <div class="photo-stack">
+        <div class="main-photo"></div>
+        <div class="mini-photo"></div>
+        <div class="image-badge">
+          <span>✦</span>
+          <div><b>15+ Years</b><small>of trusted care</small></div>
+        </div>
+      </div>
+      <div class="section-copy">
+        <span class="eyebrow">✦ WHO WE ARE</span>
+        <h2>Care built around clarity, <span>not confusion.</span></h2>
+        <p>Health Deck brings departments, specialists, diagnostics and preventive health packages together in one place — so you always know your next step, your costs, and who's looking after you.</p>
+        <div class="stats">
+          <div><b>18k+</b><span>Patients cared for</span></div>
+          <div><b>42</b><span>Specialist doctors</span></div>
+          <div><b>12</b><span>Departments</span></div>
+          <div><b>4.9★</b><span>Average rating</span></div>
+        </div>
+        <button class="btn btn-3d btn-primary" data-open-booking>Book an Appointment</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DEPARTMENTS / SERVICES ===== -->
+  <section class="section tint" id="departments">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">✦ DEPARTMENTS</span>
+          <h2>Find the right care, <span>right away.</span></h2>
+        </div>
+        <p>Every department is staffed by specialists you can actually get an appointment with this week.</p>
+      </div>
+      <div class="dept-grid">
+        <div class="glass-card dept">
+          <div class="dept-icon">♥</div>
+          <h3>Cardiology</h3>
+          <p>Heart health &amp; diagnostics</p>
+          <a href="#doctors">Learn more →</a>
+        </div>
+        <div class="glass-card dept">
+          <div class="dept-icon">⚕</div>
+          <h3>Neurology</h3>
+          <p>Brain &amp; nervous system</p>
+          <a href="#doctors">Learn more →</a>
+        </div>
+        <div class="glass-card dept">
+          <div class="dept-icon">⚭</div>
+          <h3>Orthopedics</h3>
+          <p>Bones, joints &amp; mobility</p>
+          <a href="#doctors">Learn more →</a>
+        </div>
+        <div class="glass-card dept">
+          <div class="dept-icon">✦</div>
+          <h3>Pediatrics</h3>
+          <p>Care for children</p>
+          <a href="#doctors">Learn more →</a>
+        </div>
+        <div class="glass-card dept">
+          <div class="dept-icon">◐</div>
+          <h3>Dermatology</h3>
+          <p>Skin &amp; wellness</p>
+          <a href="#doctors">Learn more →</a>
+        </div>
+      </div>
+
+      <div class="service-grid">
+        <div class="glass-card service">
+          <div class="service-img diagnostics"></div>
+          <div class="service-body">
+            <span class="tag">SERVICE</span>
+            <h3>Diagnostics</h3>
+            <p>Lab work, imaging and screening with results delivered digitally, usually same-day.</p>
+          </div>
+        </div>
+        <div class="glass-card service">
+          <div class="service-img surgery"></div>
+          <div class="service-body">
+            <span class="tag">SERVICE</span>
+            <h3>Surgery</h3>
+            <p>Modern surgical suites with clear pre- and post-op guidance from your care team.</p>
+          </div>
+        </div>
+        <div class="glass-card service">
+          <div class="service-img wellness"></div>
+          <div class="service-body">
+            <span class="tag">SERVICE</span>
+            <h3>Wellness</h3>
+            <p>Preventive checkups, nutrition and recovery programs built around your goals.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== DOCTORS ===== -->
+  <section class="section" id="doctors">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">✦ OUR DOCTORS</span>
+          <h2>Meet the team <span>you'll actually see.</span></h2>
+        </div>
+        <p>Board-certified specialists, reviewed by the patients they've treated.</p>
+      </div>
+      <div class="doctor-grid">
+        <div class="glass-card doctor">
+          <div class="doctor-photo doc1"></div>
+          <span class="tag">Cardiology</span>
+          <span class="available">● Available today</span>
+          <h3>Dr. Ravi Patel</h3>
+          <p>14 years experience</p>
+          <div class="stars">★★★★★ <small>(186)</small></div>
+        </div>
+        <div class="glass-card doctor">
+          <div class="doctor-photo doc2"></div>
+          <span class="tag">Pediatrics</span>
+          <span class="available">● Available today</span>
+          <h3>Dr. Meera Nair</h3>
+          <p>9 years experience</p>
+          <div class="stars">★★★★★ <small>(142)</small></div>
+        </div>
+        <div class="glass-card doctor">
+          <div class="doctor-photo doc3"></div>
+          <span class="tag">Orthopedics</span>
+          <h3>Dr. Owen Clarke</h3>
+          <p>11 years experience</p>
+          <div class="stars">★★★★★ <small>(97)</small></div>
+        </div>
+        <div class="glass-card doctor">
+          <div class="doctor-photo doc4"></div>
+          <span class="tag">Dermatology</span>
+          <span class="available">● Available today</span>
+          <h3>Dr. Layla Haddad</h3>
+          <p>7 years experience</p>
+          <div class="stars">★★★★☆ <small>(64)</small></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== HEALTH PACKAGES ===== -->
+  <section class="section tint" id="packages">
+    <div class="container">
+      <div class="section-head centered">
+        <div>
+          <span class="eyebrow">✦ HEALTH PACKAGES</span>
+          <h2>Preventive care, <span>priced upfront.</span></h2>
+          <p>No surprise bills — every package shows its full price before you book.</p>
+        </div>
+      </div>
+      <div class="package-grid">
+        <div class="glass-card package">
+          <span class="tag">Basic</span>
+          <h3>Essential Checkup</h3>
+          <strong>$49<small>/checkup</small></strong>
+          <ul>
+            <li>Blood work &amp; vitals panel</li>
+            <li>Blood pressure &amp; BMI check</li>
+            <li>15-minute doctor consult</li>
+          </ul>
+          <button class="btn btn-3d btn-white full" data-open-booking>Book Your Test</button>
+        </div>
+        <div class="glass-card package featured">
+          <span class="tag">Most popular</span>
+          <h3>Complete Wellness</h3>
+          <strong>$129<small>/checkup</small></strong>
+          <ul>
+            <li>Full panel bloodwork &amp; ECG</li>
+            <li>Diagnostic imaging</li>
+            <li>Specialist review &amp; report</li>
+          </ul>
+          <button class="btn btn-3d btn-white full" data-open-booking>Book Your Test</button>
+        </div>
+        <div class="glass-card package">
+          <span class="tag">Family</span>
+          <h3>Family Package</h3>
+          <strong>$299<small>/family</small></strong>
+          <ul>
+            <li>Checkups for up to 4 members</li>
+            <li>Shared digital care plan</li>
+            <li>Priority scheduling</li>
+          </ul>
+          <button class="btn btn-3d btn-white full" data-open-booking>Book Your Test</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== WHY CHOOSE US ===== -->
+  <section class="section" id="why">
+    <div class="container why-grid">
+      <div class="glass-card why-card">
+        <div class="big-icon">✦</div>
+        <h3>The details that make care feel easier.</h3>
+        <p>From the moment you book to your follow-up call, Health Deck is built to remove friction — not add to it.</p>
+        <div class="why-list">
+          <div><span>✓</span><span><b>Expert specialists</b><small>Every doctor is board-certified and reviewed by patients like you.</small></span></div>
+          <div><span>✓</span><span><b>Modern equipment</b><small>Diagnostics and imaging kept current with the latest standards.</small></span></div>
+          <div><span>✓</span><span><b>Patient-first care</b><small>Clear pricing, clear next steps, no surprise paperwork.</small></span></div>
+          <div><span>✓</span><span><b>24/7 support</b><small>Your care team is reachable long after the appointment ends.</small></span></div>
+        </div>
+      </div>
+      <div class="why-image"></div>
+    </div>
+  </section>
+
+  <!-- ===== TESTIMONIALS ===== -->
+  <section class="section tint" id="testimonials">
+    <div class="container">
+      <div class="section-head centered">
+        <div>
+          <span class="eyebrow">✦ PATIENT STORIES</span>
+          <h2>Real experiences, <span>in their words.</span></h2>
+        </div>
+      </div>
+      <div class="glass-card testimonial">
+        <div class="quote">"</div>
+        <blockquote id="quote">The booking process was simple, the clinic felt calm, and my doctor explained everything without rushing me.</blockquote>
+        <div class="patient">
+          <span>AM</span>
+          <div><b id="patientName">Ananya M.</b><small>Verified patient</small></div>
+          <strong>★ 5.0</strong>
+        </div>
+        <div class="slider-actions">
+          <button id="prev" aria-label="Previous story">←</button>
+          <button id="next" aria-label="Next story">→</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FACILITIES ===== -->
+  <section class="section" id="facilities">
+    <div class="container">
+      <div class="section-head">
+        <div>
+          <span class="eyebrow">✦ FACILITIES</span>
+          <h2>Everything <span>under one calm roof.</span></h2>
+        </div>
+        <p>On-site diagnostics, surgery and recovery — no referrals across town.</p>
+      </div>
+      <div class="facility-grid">
+        <div class="glass-card facility"><span>◎</span><h3>Diagnostic Lab</h3><p>Same-day imaging &amp; bloodwork</p></div>
+        <div class="glass-card facility"><span>✦</span><h3>Operation Theatre</h3><p>Modern surgical suites</p></div>
+        <div class="glass-card facility"><span>⚕</span><h3>Pharmacy</h3><p>On-site prescription pickup</p></div>
+        <div class="glass-card facility"><span>●</span><h3>Emergency Ward</h3><p>24/7 emergency response</p></div>
+        <div class="glass-card facility"><span>♥</span><h3>ICU</h3><p>Round-the-clock critical care</p></div>
+        <div class="glass-card facility"><span>◉</span><h3>Physiotherapy</h3><p>Recovery &amp; mobility programs</p></div>
+        <div class="glass-card facility"><span>⚭</span><h3>Radiology</h3><p>MRI, CT &amp; X-ray on-site</p></div>
+        <div class="glass-card facility"><span>◐</span><h3>Wellness Studio</h3><p>Nutrition &amp; preventive care</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== APPOINTMENT CTA ===== -->
+  <section class="cta">
+    <div class="container cta-card">
+      <div>
+        <span class="eyebrow">✦ READY WHEN YOU ARE</span>
+        <h2>Book your appointment in under a minute.</h2>
+        <p>Pick a doctor and a time that works for you — we'll confirm the rest.</p>
+      </div>
+      <button class="btn btn-3d btn-white btn-big" data-open-booking>Book an Appointment</button>
+    </div>
+  </section>
+
+  <!-- ===== CONTACT & LOCATION ===== -->
+  <section class="section" id="contact">
+    <div class="container contact-grid">
+      <div>
+        <span class="eyebrow">✦ CONTACT &amp; LOCATION</span>
+        <h2>We're <span>easy to reach.</span></h2>
+        <p>Questions before you book? Reach out and our team will get back to you within a day.</p>
+        <div class="contact-items">
+          <div><span>☎</span><div><b>Call us</b><small>+1 (555) 213-4890</small></div></div>
+          <div><span>✉</span><div><b>Email</b><small>care@healthdeck.example</small></div></div>
+          <div><span>⌖</span><div><b>Visit</b><small>220 Wellness Avenue, Suite 4</small></div></div>
+        </div>
+      </div>
+      <div class="glass-card contact-card">
+        <div class="map">
+          <div class="pin">⌖</div>
+          <b>220 Wellness Avenue, Suite 4</b>
+        </div>
+        <form id="contactForm" novalidate>
+          <div class="form-row">
+            <label>Full name<input type="text" name="name" required maxlength="100"></label>
+            <label>Email<input type="email" name="email" required></label>
+          </div>
+          <label>Message<textarea name="message" rows="4" required maxlength="2000"></textarea></label>
+          <button type="submit" class="btn btn-3d btn-primary full">Send message →</button>
+        </form>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ===== BOOKING MODAL ===== -->
+<div class="modal" id="bookingModal" hidden>
+  <div class="backdrop" data-close></div>
+  <div class="glass-panel modal-box">
+    <button class="close" data-close aria-label="Close">✕</button>
+    <div class="modal-icon">✦</div>
+    <h2>Book an Appointment</h2>
+    <p>Tell us a bit about your visit and our team will confirm shortly.</p>
+    <form id="bookingForm">
+      <div class="form-row">
+        <label>Full name<input type="text" name="name" required></label>
+        <label>Phone<input type="tel" name="phone" required></label>
+      </div>
+      <div class="form-row">
+        <label>Department
+          <select name="department">
+            <option>General Medicine</option>
+            <option>Cardiology</option>
+            <option>Neurology</option>
+            <option>Orthopedics</option>
+            <option>Pediatrics</option>
+            <option>Dermatology</option>
+          </select>
+        </label>
+        <label>Doctor
+          <select name="doctor">
+            <option>Dr. Ravi Patel</option>
+            <option>Dr. Meera Nair</option>
+            <option>Dr. Owen Clarke</option>
+            <option>Dr. Layla Haddad</option>
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Preferred date<input type="date" id="modalDate" name="date" required></label>
+        <label>Preferred time<input type="time" name="time" required></label>
+      </div>
+      <button type="submit" class="btn btn-3d btn-primary full">Confirm Appointment</button>
+    </form>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div class="toast" id="toast">✓ <span>Done</span></div>
+
+<!-- ===== FOOTER ===== -->
+<footer class="footer">
+  <div class="container footer-grid">
+    <div>
+      <a class="logo" href="#home"><span class="logo-mark">+</span><b>HEALTH<span>DECK</span></b></a>
+      <p>Modern healthcare, without the confusion. Departments, doctors and packages, all in one place.</p>
+    </div>
+    <div>
+      <b>Explore</b>
+      <a href="#about">About</a>
+      <a href="#departments">Departments</a>
+      <a href="#doctors">Doctors</a>
+      <a href="#packages">Packages</a>
+    </div>
+    <div>
+      <b>Patients</b>
+      <a href="#facilities">Facilities</a>
+      <a href="#testimonials">Stories</a>
+      <a href="patient-dashboard.html">Patient Dashboard</a>
+      <a href="#contact">Contact</a>
+    </div>
+    <div>
+      <b>Get in touch</b>
+      <a href="mailto:care@healthdeck.example">care@healthdeck.example</a>
+      <a href="tel:+15552134890">+1 (555) 213-4890</a>
+    </div>
+  </div>
+  <div class="container footer-bottom">
+    <span>© 2026 Health Deck. All rights reserved.</span>
+    <span>Privacy · Terms</span>
+  </div>
+</footer>
+
+<script src="healthdeck-script.js"></script>
+</body>
+</html>
