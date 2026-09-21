@@ -28,6 +28,18 @@ app.use(
 
 app.use(express.json({ limit: '10kb' })); // small limit — this endpoint only ever needs a short form payload
 
+// Handle bad input to the body parser itself (malformed JSON, oversized payload) with
+// proper 4xx JSON responses instead of letting them fall through to a generic 500.
+app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.parse.failed') {
+    return res.status(400).json({ success: false, message: 'Request body must be valid JSON.' });
+  }
+  if (err && err.type === 'entity.too.large') {
+    return res.status(413).json({ success: false, message: 'Request body is too large.' });
+  }
+  next(err);
+});
+
 /* ------------------------------------------------------------------ */
 /*  SMTP transporter                                                   */
 /* ------------------------------------------------------------------ */
@@ -57,32 +69,70 @@ function getTransporter() {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+const LIMITS = {
+  name: { min: 2, max: 100 },
+  email: { min: 5, max: 254 }, // 5 = shortest plausible address, e.g. a@b.co ; 254 = RFC 5321 max
+  phone: { min: 7, max: 20 }, // only enforced when phone is provided at all — it's optional
+  message: { min: 10, max: 2000 },
+};
+
 function validateContactPayload(body) {
   const errors = [];
   const clean = {};
 
-  const name = String(body.name || '').trim();
-  const email = String(body.email || '').trim();
-  const phone = String(body.phone || '').trim();
-  const message = String(body.message || '').trim();
-  const date = String(body.date || '').trim();
-  const time = String(body.time || '').trim();
-  const guests = String(body.guests || '').trim();
+  // Reject non-object bodies outright (e.g. a bare string or number sent as JSON) rather
+  // than letting every field below silently fall back to "".
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    return { errors: ['Request body must be a JSON object.'], clean: null };
+  }
 
-  if (!name) errors.push('Name is required.');
-  else if (name.length > 100) errors.push('Name is too long.');
+  const name = String(body.name ?? '').trim();
+  const email = String(body.email ?? '').trim();
+  const phone = String(body.phone ?? '').trim();
+  const message = String(body.message ?? '').trim();
+  const date = String(body.date ?? '').trim();
+  const time = String(body.time ?? '').trim();
+  const guests = String(body.guests ?? '').trim();
 
-  if (!email) errors.push('Email is required.');
-  else if (!EMAIL_RE.test(email)) errors.push('Please provide a valid email address.');
+  // --- name: required, min/max length ---
+  if (!name) {
+    errors.push('Name is required.');
+  } else if (name.length < LIMITS.name.min) {
+    errors.push(`Name must be at least ${LIMITS.name.min} characters.`);
+  } else if (name.length > LIMITS.name.max) {
+    errors.push(`Name must be no more than ${LIMITS.name.max} characters.`);
+  }
 
-  if (phone && !/^[\d\s()+\-.]{7,20}$/.test(phone)) errors.push('Please provide a valid phone number.');
+  // --- email: required, format, min/max length ---
+  if (!email) {
+    errors.push('Email is required.');
+  } else if (email.length < LIMITS.email.min || email.length > LIMITS.email.max) {
+    errors.push(`Email must be between ${LIMITS.email.min} and ${LIMITS.email.max} characters.`);
+  } else if (!EMAIL_RE.test(email)) {
+    errors.push('Please provide a valid email address.');
+  }
 
-  if (!message) errors.push('Message is required.');
-  else if (message.length > 2000) errors.push('Message is too long (2000 characters max).');
+  // --- phone: optional, but validated if present ---
+  if (phone) {
+    if (phone.length < LIMITS.phone.min || phone.length > LIMITS.phone.max) {
+      errors.push(`Phone number must be between ${LIMITS.phone.min} and ${LIMITS.phone.max} characters.`);
+    } else if (!/^[\d\s()+\-.]+$/.test(phone)) {
+      errors.push('Please provide a valid phone number.');
+    }
+  }
+
+  // --- message: required, min/max length ---
+  if (!message) {
+    errors.push('Message is required.');
+  } else if (message.length < LIMITS.message.min) {
+    errors.push(`Message must be at least ${LIMITS.message.min} characters.`);
+  } else if (message.length > LIMITS.message.max) {
+    errors.push(`Message must be no more than ${LIMITS.message.max} characters.`);
+  }
 
   // Honeypot field: real users never fill a visually-hidden field.
   // If it's populated, silently treat as spam by flagging it — the route handles the response.
-  const isBot = Boolean(String(body.company_website || '').trim());
+  const isBot = Boolean(String(body.company_website ?? '').trim());
 
   clean.name = name;
   clean.email = email;
@@ -101,7 +151,7 @@ function validateContactPayload(body) {
 /* ------------------------------------------------------------------ */
 
 app.get('/api/health', (req, res) => {
-  res.json({
+  res.status(200).json({
     success: true,
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
@@ -109,7 +159,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/contact', async (req, res) => {
-  const { errors, clean } = validateContactPayload(req.body || {});
+  const { errors, clean } = validateContactPayload(req.body);
 
   if (errors.length) {
     return res.status(400).json({ success: false, message: errors.join(' ') });
@@ -172,6 +222,16 @@ app.post('/api/contact', async (req, res) => {
       message: 'We could not send your message right now. Please try again shortly.',
     });
   }
+});
+
+// Wrong method on a known route (e.g. GET /api/contact) → 405, not a bare 404.
+app.all('/api/contact', (req, res) => {
+  res.set('Allow', 'POST');
+  res.status(405).json({ success: false, message: 'Method not allowed. Use POST.' });
+});
+app.all('/api/health', (req, res) => {
+  res.set('Allow', 'GET');
+  res.status(405).json({ success: false, message: 'Method not allowed. Use GET.' });
 });
 
 function escapeHtml(str) {
